@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import homeRoute from './routes/homeRoute.js';
+import tokenRoute from './routes/tokensRoute.js';
+import vaultsRoute from './routes/vaultsRoute.js';
 
 dotenv.config();
 
@@ -16,6 +18,8 @@ app.use(cors({
 app.use(express.json());
 
 //routes
+app.use('/api/tokens', tokenRoute);
+app.use('/api/vaults', vaultsRoute);
 app.use('/', homeRoute);
 
 app.listen(PORT, () => {
