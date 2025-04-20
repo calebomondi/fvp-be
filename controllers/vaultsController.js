@@ -7,7 +7,7 @@ import {
 //get scheduled vaults data
 export const scheduledVaultsData = async (req, res) => {
     const { vaultData } = req.body;
-
+    
     //get days in interval
     const unlockDays = getDaysInInterval(vaultData.startDate, vaultData.endDate, vaultData.unLockDuration);
 

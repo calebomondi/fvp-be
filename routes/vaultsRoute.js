@@ -1,5 +1,7 @@
 import express from 'express';
-import { scheduledVaultsData } from '../controllers/vaultsController.js';
+import { 
+    scheduledVaultsData,
+} from '../controllers/vaultsController.js';
 
 const vaultsRoute = express.Router();
 
