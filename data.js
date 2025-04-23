@@ -15,3 +15,4 @@ export const earnings = [
     {asset: "0x6B175474E89094C44Da98b954EedeAC495271d0F", amount: 0.015 * 1e18, timestamp: 1713699600},
     {asset: "0xC02aaA39b223FE8D0A0E5C4F27eAD9083C756Cc2", amount: 0.003 * 1e18, timestamp: 1713703200}
 ];
+
