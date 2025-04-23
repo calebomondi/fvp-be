@@ -1,12 +1,12 @@
 import express from 'express';
 import { 
     valueTrends,
-    checkSlippage
+    checkSlippageOrGain
 } from '../controllers/tokenController.js';
 
 const tokenRouter = express.Router();
 
 tokenRouter.route('/value-trends').post(valueTrends);
-tokenRouter.route('/slippage').post(checkSlippage);
+tokenRouter.route('/slippage').get(checkSlippageOrGain);
 
 export default tokenRouter;

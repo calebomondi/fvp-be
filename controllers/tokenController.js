@@ -34,12 +34,17 @@ export const valueTrends = async (req, res) => {
 }
 
 //check the slippage of the asset to unlcok
-export const checkSlippage = async (req, res) => {
-    const {percentageChange} = req.body;
-    const slippage = percentageChange > 0 ? true : false;
+export const checkSlippageOrGain = async (req, res) => {
+    const {percentageChange, neededGain, neededSlip} = req.body;
+    const gain = percentageChange > 0 ? true : false;
 
-    if(!slippage){
-        const canUnlock = percentageChange < -5 ? true : false;
+    if(gain){
+        const canUnlock = percentageChange > neededGain ? true : false;
+        res.status(200).json({ canUnlock });
+    }
+
+    if(!gain){
+        const canUnlock = percentageChange < neededSlip ? true : false;
         res.status(200).json({ canUnlock });
     }
 
