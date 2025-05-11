@@ -5,6 +5,6 @@ import {
 
 const vaultsRoute = express.Router();
 
-vaultsRoute.route('/schedule').post(scheduledVaultsData);
+vaultsRoute.route('/scheduled').post(scheduledVaultsData);
 
 export default vaultsRoute;

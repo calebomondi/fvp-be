@@ -19,6 +19,9 @@ export function getUnlockStatus(unlockDays, unlockAmount, unLockedTotal) {
     //sum of dates to unlock
     const daysNum = unlockDays.length;
 
+    //total amount to unlock
+    const totalAmount = unlockAmount * daysNum;
+
     //get now in timestamp in seconds
     const now = Math.floor(Date.now() / 1000);
 
@@ -54,6 +57,11 @@ export function getUnlockStatus(unlockDays, unlockAmount, unLockedTotal) {
     } else {
         console.log(`Can unlock: ${expectedUnlockedAmount - unLockedTotal}`);
         amountToUnlock = expectedUnlockedAmount - unLockedTotal;
+    }
+
+    // for future dates paset expiry
+    if (expectedUnlockedAmount === 0) {
+        amountToUnlock = totalAmount - unLockedTotal;
     }
 
     return { canUnlockNow, amountToUnlock };
