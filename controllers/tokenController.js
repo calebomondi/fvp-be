@@ -43,9 +43,44 @@ export const checkSlippage = async (req, res) => {
 
 }
 
+//get the symbol of the asset from address
+export const getSymbol = async (req, res) => {
+    const { address, chainId } = req.query;
+
+    try {
+        //get table name
+        const { data: table, error: tableError } = await supabase
+            .from("chain")
+            .select("name")
+            .eq("network_id", chainId);
+        
+        if (tableError) throw tableError;
+        if (table.length === 0) {
+            return res.status(404).json({ error: "Chain not found" });
+        }
+
+        //get token symbol
+        const { data: tokenData, error: tokenError } = await supabase
+            .from(table[0].name)
+            .select("symbol")
+            .eq("address", address);
+
+        if (tokenError) throw tokenError;
+        if (tokenData.length === 0) {
+            return res.status(404).json({ error: "Token not found" });
+        }
+
+        res.status(200).json({ symbol: tokenData[0].symbol });
+
+    } catch (error) {
+        console.error("Error fetching Symbol:", error);
+        res.status(500).json(error);
+    }
+}
+
 //get deployment address and aave addresses
-export const chainData = async (req, res) => {
-    const {chainId} = req.body;
+export const getChainData = async (req, res) => {
+    const {chainId} = req.query;
 
     try {
         //get table name
@@ -72,7 +107,10 @@ export const chainData = async (req, res) => {
 
 //get the token data
 export const getTokenData = async (req, res) => {
-    const { symbol, chainId } = req.body;
+    const { symbol, chainId } = req.query;
+    if (!symbol || !chainId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+    }
 
     try {
         //get table name

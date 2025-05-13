@@ -3,7 +3,8 @@ import {
     valueTrends,
     checkSlippage,
     getTokenData,
-    chainData
+    getChainData,
+    getSymbol
 } from '../controllers/tokenController.js';
 
 const tokenRouter = express.Router();
@@ -11,6 +12,7 @@ const tokenRouter = express.Router();
 tokenRouter.route('/value-trends').post(valueTrends);
 tokenRouter.route('/slippage').get(checkSlippage);
 tokenRouter.route('/token-data').get(getTokenData);
-tokenRouter.route('/chain-data').get(chainData);
+tokenRouter.route('/chain-data').get(getChainData);
+tokenRouter.route('/get-symbol').get(getSymbol);
 
 export default tokenRouter;
