@@ -1,4 +1,5 @@
 import { formatUnits } from "ethers";
+import supabase from "../database/supabaseClient.js";
 import { 
     getAssetPrices
 } from "../utils/assetprices.js";
@@ -42,3 +43,81 @@ export const checkSlippage = async (req, res) => {
 
 }
 
+//get deployment address and aave addresses
+export const chainData = async (req, res) => {
+    const {chainId} = req.body;
+
+    try {
+        //get table name
+        const { data: table, error: tableError } = await supabase
+            .from("chain")
+            .select("pool_address, dataprovider, lockasset")
+            .eq("network_id", chainId);
+        
+        if (tableError) throw tableError;
+        if (table.length === 0) {
+            return res.status(404).json({ error: "Chain not found" });
+        }
+
+        res.status(200).json({
+            poolAddress: table[0].pool_address,
+            dataProvider: table[0].dataprovider,
+            lockAsset: table[0].lockasset
+        });
+    } catch (error) {
+        console.error("Error fetching chain data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
+
+//get the token data
+export const getTokenData = async (req, res) => {
+    const { symbol, chainId } = req.body;
+
+    try {
+        //get table name
+        const { data: table, error: tableError } = await supabase
+            .from("chain")
+            .select("name")
+            .eq("network_id", chainId);
+        
+        if (tableError) throw tableError;
+        if (table.length === 0) {
+            return res.status(404).json({ error: "Chain not found" });
+        }
+
+        //get token decimals and address
+        const tokenAddress = supabase
+            .from(table[0].name)
+            .select("address")
+            .eq("symbol", symbol);
+
+        const tokenDecimals = supabase
+            .from("assets")
+            .select("decimals")
+            .eq("symbol", symbol);
+
+        const [
+            { data: tokenAddressData, error: tokenAddressError },
+            { data: tokenDecimalsData, error: tokenDecimalsError }
+        ] = await Promise.all([tokenAddress, tokenDecimals]);
+
+        if (tokenAddressError) throw tokenAddressError;
+        if (tokenDecimalsError) throw tokenDecimalsError;
+        if (tokenAddressData.length === 0 || tokenDecimalsData.length === 0) {
+            return res.status(404).json({ error: "Token not found" });
+        }
+
+        const tokenData = {
+            address: tokenAddressData[0].address,
+            decimals: tokenDecimalsData[0].decimals
+        };
+
+        console.log("Token Data:", tokenData);
+        res.status(200).json(tokenData);
+
+    } catch (error) {
+        console.error("Error fetching price trends:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+}
