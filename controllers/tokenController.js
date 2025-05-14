@@ -43,6 +43,40 @@ export const checkSlippage = async (req, res) => {
 
 }
 
+//get supported tokens
+export const supportedTokens = async (req, res) => {
+    const { chainId } = req.query;
+
+    try {
+        //get table name
+        const { data: table, error: tableError } = await supabase
+            .from("chain")
+            .select("name")
+            .eq("network_id", chainId);
+        
+        if (tableError) throw tableError;
+        if (table.length === 0) {
+            return res.status(404).json({ error: "Chain not found" });
+        }
+
+        //get supported tokens
+        const { data: tokens, error: tokenError } = await supabase
+            .from(table[0].name)
+            .select("symbol, aave");
+
+        if (tokenError) throw tokenError;
+        if (tokens.length === 0) {
+            return res.status(404).json({ error: "No supported tokens found" });
+        }
+
+        res.status(200).json(tokens);
+
+    } catch (error) {
+        console.error("Error fetching supported tokens:", error);
+        res.status(500).json(error);
+    }
+}
+
 //get the symbol of the asset from address
 export const getSymbol = async (req, res) => {
     const { address, chainId } = req.query;
