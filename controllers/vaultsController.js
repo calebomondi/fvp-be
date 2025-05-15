@@ -3,6 +3,9 @@ import {
     getUnlockStatus,
     getFullUnlockDaysStatus
 } from "../utils/scheduled.js";
+import { LOCKASSET_CONTRACT_ABI } from "../blockchain/core.js";
+import { ethers } from "ethers";
+import { getTokendecimalsNSymbol } from "../utils/tokens.js";
 
 //get scheduled vaults data
 export const scheduledVaultsData = async (req, res) => {
@@ -18,4 +21,136 @@ export const scheduledVaultsData = async (req, res) => {
     const unlockDaysStatus = getFullUnlockDaysStatus(unlockDays);
 
     res.json({ checkUnlockStatus, unlockDaysStatus });
+}
+
+//contract instance
+const contractInstance = (chainId, contractAddress) => {
+    const rpc = chainId === 84532 ? process.env.BASE_SEP_RPC_URL : process.env.BASE_RPC_URL;
+    const provider = new ethers.providers.JsonRpcProvider(rpc);
+    const contract = new ethers.Contract(contractAddress, LOCKASSET_CONTRACT_ABI, provider);
+    return contract;
+}
+
+function formatTimestampToISO(timestamp) {
+    // Convert uint32 timestamp (seconds) to milliseconds
+    const date = new Date(timestamp * 1000);
+    // Get ISO string and remove 'Z', then append '.174' for milliseconds
+    const isoString = date.toISOString().replace("Z", "").replace(/\.\d{3}/, ".174");
+    return isoString;
+}
+
+//get user vaults
+export const getUserVaults = async (req, res) => {
+    const {owner, chainId, contractAddress} = req.query;
+
+    // Validate inputs
+    if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
+        return res.status(400).json({ error: "Invalid owner or contract address" });
+    }
+    const vaultIdNum = Number(vaultId);
+    if (isNaN(vaultIdNum)) {
+        return res.status(400).json({ error: "Invalid vault ID" });
+    }
+
+    //get contract instance
+    const contract = contractInstance(chainId, contractAddress);
+
+    //get user vaults
+    try {
+        // Get the total number of vaults
+        const vaultCount = await contract.getUserVaultCount(owner);
+        const vaultCountNum = Number(vaultCount);
+
+        // Fetch all vaults
+        const vaults = [];
+        const decimalsCache = new Map(); // Cache decimals for each asset
+        const symbolsCache = new Map(); // Cache symbols for each asset
+
+        for (let vaultId = 0; vaultId < vaultCountNum; vaultId++) {
+            const vaultData = await contract.getUserVaultByIndex(owner, vaultId);
+
+            // Fetch decimals for the ERC-20 token (if asset is not zero address and not native)
+            let decimals = 18; 
+            let symbol = "ETH"; // Default symbol for native asset
+
+            if (ethers.isAddress(vaultData.asset) && !vaultData.native) {
+                if (decimalsCache.has(vaultData.asset) && symbolsCache.has(vaultData.asset)) {
+                    symbol = symbolsCache.get(vaultData.asset);
+                    decimals = decimalsCache.get(vaultData.asset);
+                } else {
+                    const assetData = await getTokendecimalsNSymbol(chainId, vaultData.asset);
+                    if(assetData) {
+                        decimals = assetData.decimals;
+                        symbol = assetData.symbol;
+                        decimalsCache.set(vaultData.asset, decimals);
+                        symbolsCache.set(vaultData.asset, assetData.symbol);
+                    }
+                }
+            }
+
+            // Format the vault data
+            const formattedVault = {
+                vaultId: vaultId,
+                owner: vaultData.owner,
+                asset: vaultData.asset,
+                symbol: vaultData.native ? "ETH" : symbolsCache.get(vaultData.asset) || symbol,
+                decimals: vaultData.native ? 18 : decimals,
+                native: vaultData.native,
+                amount: ethers.formatUnits(vaultData.amount, decimals),
+                unLockedTotal: ethers.formatUnits(vaultData.unLockedTotal, decimals),
+                startDate: formatTimestampToISO(vaultData.startDate),
+                endDate: formatTimestampToISO(vaultData.endDate),
+                vaultType: vaultData.vaultType,
+                neededSlip: Number(vaultData.neededSlip),
+                unLockDuration: Number(vaultData.unLockDuration),
+                unLockAmount: ethers.formatUnits(vaultData.unLockAmount, decimals),
+                unLockGoal: ethers.formatUnits(vaultData.unLockGoal, decimals),
+                title: vaultData.title,
+                emergency: vaultData.emergency,
+            };
+
+            vaults.push(formattedVault);
+        }
+
+        res.json({ vaults, total: vaultCountNum });
+    } catch (error) {
+        console.error("Error fetching user vaults:", error);
+        res.status(500).json({ error: "Failed to fetch user vaults" });
+    }
+
+}
+
+//get vault transactions
+export const getVaultTransactions = async (req, res) => {
+    const {owner, chainId, contractAddress, decimals} = req.query;
+
+    // Validate inputs
+    if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
+        return res.status(400).json({ error: "Invalid owner or contract address" });
+    }
+    const vaultIdNum = Number(vaultId);
+    if (isNaN(vaultIdNum)) {
+        return res.status(400).json({ error: "Invalid vault ID" });
+    }
+
+    //get contract instance
+    const contract = contractInstance(chainId, contractAddress);
+
+    try {
+        // Fetch transactions
+        const transactions = await contract.getUserTransactions(owner, vaultIdNum);
+
+        // Format transactions
+        const formattedTransactions = transactions.map((tx, index) => ({
+            depositor: tx.depositor,
+            amount: ethers.formatUnits(tx.amount, decimals),
+            withdrawn: tx.withdrawn,
+            timestamp: formatTimestampToISO(tx.timestamp),
+        }));
+
+        res.json({ transactions: formattedTransactions, total: transactions.length });
+    } catch (error) {
+        console.error("Error fetching vault transactions:", error);
+        res.status(500).json({ error: "Failed to fetch vault transactions" });
+    }
 }
