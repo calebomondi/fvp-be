@@ -25,15 +25,16 @@ export const scheduledVaultsData = async (req, res) => {
 
 //contract instance
 const contractInstance = (chainId, contractAddress) => {
-    const rpc = chainId === 84532 ? process.env.BASE_SEP_RPC_URL : process.env.BASE_RPC_URL;
-    const provider = new ethers.providers.JsonRpcProvider(rpc);
+    const rpc = chainId === 8453 ? process.env.BASE_RPC_URL : process.env.BASE_SEP_RPC_URL;
+    console.log("RPC URL:", rpc, "chainId: ", chainId);
+    const provider = new ethers.JsonRpcProvider(rpc);
     const contract = new ethers.Contract(contractAddress, LOCKASSET_CONTRACT_ABI, provider);
     return contract;
 }
 
 function formatTimestampToISO(timestamp) {
     // Convert uint32 timestamp (seconds) to milliseconds
-    const date = new Date(timestamp * 1000);
+    const date = new Date(Number(timestamp) * 1000);
     // Get ISO string and remove 'Z', then append '.174' for milliseconds
     const isoString = date.toISOString().replace("Z", "").replace(/\.\d{3}/, ".174");
     return isoString;
@@ -47,10 +48,8 @@ export const getUserVaults = async (req, res) => {
     if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
         return res.status(400).json({ error: "Invalid owner or contract address" });
     }
-    const vaultIdNum = Number(vaultId);
-    if (isNaN(vaultIdNum)) {
-        return res.status(400).json({ error: "Invalid vault ID" });
-    }
+
+    console.log(`chainId: ${chainId}`)
 
     //get contract instance
     const contract = contractInstance(chainId, contractAddress);
@@ -71,12 +70,14 @@ export const getUserVaults = async (req, res) => {
 
             // Fetch decimals for the ERC-20 token (if asset is not zero address and not native)
             let decimals = 18; 
-            let symbol = "ETH"; // Default symbol for native asset
+            let symbol = "ETH";
 
-            if (ethers.isAddress(vaultData.asset) && !vaultData.native) {
+            if (!vaultData.native) {
+                console.log("vaultData.asset: ", vaultData.asset)
                 if (decimalsCache.has(vaultData.asset) && symbolsCache.has(vaultData.asset)) {
                     symbol = symbolsCache.get(vaultData.asset);
                     decimals = decimalsCache.get(vaultData.asset);
+                    console.log("decimals: ", decimals, "symbol: ", symbol)
                 } else {
                     const assetData = await getTokendecimalsNSymbol(chainId, vaultData.asset);
                     if(assetData) {
@@ -84,9 +85,11 @@ export const getUserVaults = async (req, res) => {
                         symbol = assetData.symbol;
                         decimalsCache.set(vaultData.asset, decimals);
                         symbolsCache.set(vaultData.asset, assetData.symbol);
-                    }
+                    }                     
                 }
             }
+
+            
 
             // Format the vault data
             const formattedVault = {
@@ -112,7 +115,7 @@ export const getUserVaults = async (req, res) => {
             vaults.push(formattedVault);
         }
 
-        res.json({ vaults, total: vaultCountNum });
+        res.json(vaults);
     } catch (error) {
         console.error("Error fetching user vaults:", error);
         res.status(500).json({ error: "Failed to fetch user vaults" });
@@ -122,15 +125,11 @@ export const getUserVaults = async (req, res) => {
 
 //get vault transactions
 export const getVaultTransactions = async (req, res) => {
-    const {owner, chainId, contractAddress, decimals} = req.query;
+    const {owner, chainId, contractAddress, decimals, vaultId} = req.query;
 
     // Validate inputs
     if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
         return res.status(400).json({ error: "Invalid owner or contract address" });
-    }
-    const vaultIdNum = Number(vaultId);
-    if (isNaN(vaultIdNum)) {
-        return res.status(400).json({ error: "Invalid vault ID" });
     }
 
     //get contract instance
@@ -138,17 +137,19 @@ export const getVaultTransactions = async (req, res) => {
 
     try {
         // Fetch transactions
-        const transactions = await contract.getUserTransactions(owner, vaultIdNum);
+        const transactions = await contract.getUserTransactions(owner, Number(vaultId));
+
+        //console.log("transactions: ", JSON.stringify(transactions, null, 2))
 
         // Format transactions
         const formattedTransactions = transactions.map((tx, index) => ({
             depositor: tx.depositor,
-            amount: ethers.formatUnits(tx.amount, decimals),
+            amount: ethers.formatUnits(tx.amount, Number(decimals)),
             withdrawn: tx.withdrawn,
             timestamp: formatTimestampToISO(tx.timestamp),
         }));
 
-        res.json({ transactions: formattedTransactions, total: transactions.length });
+        res.json(formattedTransactions);
     } catch (error) {
         console.error("Error fetching vault transactions:", error);
         res.status(500).json({ error: "Failed to fetch vault transactions" });

@@ -2,6 +2,7 @@ import supabase from "../database/supabaseClient.js";
 
 //get token decimals NB:/ Write supabase function to get token decimals and symbol
 export const getTokendecimalsNSymbol = async (chainId, tokenAddress) => {
+    console.log("chainId: ", chainId, "tokenAddress: ", tokenAddress)
     try {
         //get table name
         const { data: table, error: tableError } = await supabase
@@ -29,7 +30,7 @@ export const getTokendecimalsNSymbol = async (chainId, tokenAddress) => {
         const { data: tokenSymbolData, error: tokenSymbolError } = await supabase
             .from(table[0].name)
             .select("symbol")
-            .eq("address", address);
+            .eq("address", tokenAddress);
         
         if (tokenSymbolError) throw tokenSymbolError;
         if (tokenSymbolData.length === 0) {
