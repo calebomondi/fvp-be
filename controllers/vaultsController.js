@@ -11,11 +11,15 @@ import { getTokendecimalsNSymbol } from "../utils/tokens.js";
 export const scheduledVaultsData = async (req, res) => {
     const { vaultData } = req.body;
     
+    //convert to seconds
+    const endDate = Math.floor(new Date(vaultData.endDate).getTime() / 1000)
+    const startDate = Math.floor(new Date(vaultData.startDate).getTime() / 1000)
+
     //get days in interval
-    const unlockDays = getDaysInInterval(vaultData.startDate, vaultData.endDate, vaultData.unLockDuration);
+    const unlockDays = getDaysInInterval(startDate, endDate, vaultData.unLockDuration);
 
     //check if can unlock and and amount to unlock
-    const checkUnlockStatus = getUnlockStatus(unlockDays, vaultData.unLockAmount, vaultData.unLockedTotal);
+    const checkUnlockStatus = getUnlockStatus(unlockDays, Number(vaultData.unLockAmount), Number(vaultData.unLockedTotal));
 
     //get full unlock days status
     const unlockDaysStatus = getFullUnlockDaysStatus(unlockDays);
@@ -48,8 +52,6 @@ export const getUserVaults = async (req, res) => {
     if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
         return res.status(400).json({ error: "Invalid owner or contract address" });
     }
-
-    console.log(`chainId: ${chainId}`)
 
     //get contract instance
     const contract = contractInstance(chainId, contractAddress);
@@ -89,8 +91,6 @@ export const getUserVaults = async (req, res) => {
                 }
             }
 
-            
-
             // Format the vault data
             const formattedVault = {
                 vaultId: vaultId,
@@ -107,7 +107,7 @@ export const getUserVaults = async (req, res) => {
                 neededSlip: Number(vaultData.neededSlip),
                 unLockDuration: Number(vaultData.unLockDuration),
                 unLockAmount: ethers.formatUnits(vaultData.unLockAmount, decimals),
-                unLockGoal: ethers.formatUnits(vaultData.unLockGoal, decimals),
+                unLockGoal: vaultData.unLockGoal.toString(),
                 title: vaultData.title,
                 emergency: vaultData.emergency,
             };

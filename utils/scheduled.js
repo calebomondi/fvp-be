@@ -18,7 +18,7 @@ export function getDaysInInterval(startDate, endDate, interval) {
 export function getUnlockStatus(unlockDays, unlockAmount, unLockedTotal) {
     //sum of dates to unlock
     const daysNum = unlockDays.length;
-
+    console.log(`length of unlockDays: ${daysNum}`);
     //total amount to unlock
     const totalAmount = unlockAmount * daysNum;
 
@@ -35,10 +35,12 @@ export function getUnlockStatus(unlockDays, unlockAmount, unLockedTotal) {
 
     //get the number of days that have passed and the expected amount unlocked
     for(let i = 0; i < daysNum; i++) {
+        if(unlockDays[0] > now) {
+            break
+        }
         days++;
+        expectedUnlockedAmount = unlockAmount * days;
         if(unlockDays[i] <= now && now <= unlockDays[i + 1]) {
-            expectedUnlockedAmount = unlockAmount * days;
-            console.log(`days: ${days}, expectedUnlockedAmount: ${expectedUnlockedAmount}`);
             //check if current time is within unlock window
             if(now <= unlockDays[i] + 86400) {
                 canUnlockNow = true;
@@ -57,11 +59,6 @@ export function getUnlockStatus(unlockDays, unlockAmount, unLockedTotal) {
     } else {
         console.log(`Can unlock: ${expectedUnlockedAmount - unLockedTotal}`);
         amountToUnlock = expectedUnlockedAmount - unLockedTotal;
-    }
-
-    // for future dates paset expiry
-    if (expectedUnlockedAmount === 0) {
-        amountToUnlock = totalAmount - unLockedTotal;
     }
 
     return { canUnlockNow, amountToUnlock };
