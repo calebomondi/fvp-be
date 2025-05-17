@@ -6,6 +6,7 @@ import {
 import { LOCKASSET_CONTRACT_ABI } from "../blockchain/core.js";
 import { ethers } from "ethers";
 import { getTokendecimalsNSymbol } from "../utils/tokens.js";
+import { analyzeUserVaults } from "../utils/dashboard.js";
 
 //get scheduled vaults data
 export const scheduledVaultsData = async (req, res) => {
@@ -154,4 +155,16 @@ export const getVaultTransactions = async (req, res) => {
         console.error("Error fetching vault transactions:", error);
         res.status(500).json({ error: "Failed to fetch vault transactions" });
     }
+}
+
+//dashboard analysis
+export const dashboardAnalysis = async (req, res) => {
+    const { userVaults } = req.body;
+
+    if (!userVaults || userVaults.length === 0) {
+        return res.status(400).json({ error: "No vaults found for this user" });
+    }
+
+    const analysisResults = analyzeUserVaults(userVaults);
+    res.json(analysisResults);
 }
