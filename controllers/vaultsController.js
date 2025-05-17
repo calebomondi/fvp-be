@@ -7,6 +7,9 @@ import { LOCKASSET_CONTRACT_ABI } from "../blockchain/core.js";
 import { ethers } from "ethers";
 import { getTokendecimalsNSymbol } from "../utils/tokens.js";
 import { analyzeUserVaults } from "../utils/dashboard.js";
+import { config } from "dotenv";
+
+config();
 
 //get scheduled vaults data
 export const scheduledVaultsData = async (req, res) => {
@@ -128,6 +131,8 @@ export const getUserVaults = async (req, res) => {
 export const getVaultTransactions = async (req, res) => {
     const {owner, chainId, contractAddress, decimals, vaultId} = req.query;
 
+    console.log("getVaultTransactions: ", owner, chainId, contractAddress, decimals, vaultId)
+
     // Validate inputs
     if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
         return res.status(400).json({ error: "Invalid owner or contract address" });
@@ -140,7 +145,6 @@ export const getVaultTransactions = async (req, res) => {
         // Fetch transactions
         const transactions = await contract.getUserTransactions(owner, Number(vaultId));
 
-        //console.log("transactions: ", JSON.stringify(transactions, null, 2))
 
         // Format transactions
         const formattedTransactions = transactions.map((tx, index) => ({
@@ -149,6 +153,8 @@ export const getVaultTransactions = async (req, res) => {
             withdrawn: tx.withdrawn,
             timestamp: formatTimestampToISO(tx.timestamp),
         }));
+
+        console.log("formattedTransactions: ", JSON.stringify(formattedTransactions, null, 2))
 
         res.json(formattedTransactions);
     } catch (error) {
