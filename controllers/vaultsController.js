@@ -31,9 +31,14 @@ export const scheduledVaultsData = async (req, res) => {
     res.json({ checkUnlockStatus, unlockDaysStatus });
 }
 
+const chainRPC = {
+    8453: process.env.BASE_RPC_URL,
+    84532: process.env.BASE_SEP_RPC_URL,
+}
+
 //contract instance
 const contractInstance = (chainId, contractAddress) => {
-    const rpc = chainId === 8453 ? process.env.BASE_RPC_URL : process.env.BASE_SEP_RPC_URL;
+    const rpc = chainRPC[chainId];
     console.log("RPC URL:", rpc, "chainId: ", chainId);
     const provider = new ethers.JsonRpcProvider(rpc);
     const contract = new ethers.Contract(contractAddress, LOCKASSET_CONTRACT_ABI, provider);
@@ -118,6 +123,8 @@ export const getUserVaults = async (req, res) => {
 
             vaults.push(formattedVault);
         }
+
+        console.log("vaults: ", JSON.stringify(vaults, null, 2))
 
         res.json(vaults);
     } catch (error) {
