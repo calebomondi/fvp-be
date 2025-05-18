@@ -33,13 +33,12 @@ export const scheduledVaultsData = async (req, res) => {
 
 const chainRPC = {
     8453: process.env.BASE_RPC_URL,
-    84532: process.env.BASE_SEP_RPC_URL,
+    84532: process.env.BASE_SEP_RPC_URL
 }
 
 //contract instance
 const contractInstance = (chainId, contractAddress) => {
     const rpc = chainRPC[chainId];
-    console.log("RPC URL:", rpc, "chainId: ", chainId);
     const provider = new ethers.JsonRpcProvider(rpc);
     const contract = new ethers.Contract(contractAddress, LOCKASSET_CONTRACT_ABI, provider);
     return contract;
@@ -88,7 +87,6 @@ export const getUserVaults = async (req, res) => {
                 if (decimalsCache.has(vaultData.asset) && symbolsCache.has(vaultData.asset)) {
                     symbol = symbolsCache.get(vaultData.asset);
                     decimals = decimalsCache.get(vaultData.asset);
-                    console.log("decimals: ", decimals, "symbol: ", symbol)
                 } else {
                     const assetData = await getTokendecimalsNSymbol(chainId, vaultData.asset);
                     if(assetData) {
@@ -160,8 +158,6 @@ export const getVaultTransactions = async (req, res) => {
             withdrawn: tx.withdrawn,
             timestamp: formatTimestampToISO(tx.timestamp),
         }));
-
-        console.log("formattedTransactions: ", JSON.stringify(formattedTransactions, null, 2))
 
         res.json(formattedTransactions);
     } catch (error) {
