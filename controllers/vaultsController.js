@@ -134,8 +134,6 @@ export const getUserVaults = async (req, res) => {
 export const getVaultTransactions = async (req, res) => {
     const {owner, chainId, contractAddress, decimals, vaultId} = req.query;
 
-    console.log("getVaultTransactions: ", owner, chainId, contractAddress, decimals, vaultId)
-
     // Validate inputs
     if (!ethers.isAddress(owner) || !ethers.isAddress(contractAddress)) {
         return res.status(400).json({ error: "Invalid owner or contract address" });
