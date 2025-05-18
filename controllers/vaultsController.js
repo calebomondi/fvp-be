@@ -122,8 +122,6 @@ export const getUserVaults = async (req, res) => {
             vaults.push(formattedVault);
         }
 
-        console.log("vaults: ", JSON.stringify(vaults, null, 2))
-
         res.json(vaults);
     } catch (error) {
         console.error("Error fetching user vaults:", error);
