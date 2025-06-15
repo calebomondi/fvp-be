@@ -31,6 +31,41 @@ export const scheduledVaultsData = async (req, res) => {
     res.json({ checkUnlockStatus, unlockDaysStatus });
 }
 
+//calculate goals
+export const calculateGoals = async (req, res) => {
+    const { currentAmount, goalAmount, endDate } = req.body;
+
+    // remaining amount to reach goal
+    const remainingAmount = goalAmount - currentAmount;
+
+    // Calculate the time remaining until the goal end date
+    const currentDate = Math.floor(Date.now() / 1000); // Current time in seconds
+    const toEndDateInSeconds = endDate - currentDate;
+    const daysToEndDate = Math.floor(toEndDateInSeconds / (60 * 60 * 24)); // Convert seconds to days
+    const weeksToEndDate = Math.floor(daysToEndDate / 7); // Convert days to weeks
+    const monthsToEndDate = Math.floor(daysToEndDate / 28); // Convert days to months
+
+    // Simple linear calculation for demonstration
+    const progress = (currentAmount / goalAmount) * 100;
+
+    // amount to be saving to reach goal
+    const amountToSaveDaily = remainingAmount / daysToEndDate;
+    const amountToSaveWeekly = remainingAmount / weeksToEndDate;
+    const amountToSaveMonthly = remainingAmount / monthsToEndDate;
+
+    res.json({
+        remainingAmount,
+        daysToEndDate,
+        weeksToEndDate,
+        monthsToEndDate,
+        progress: Math.ceil(progress),
+        amountToSaveDaily: Math.ceil(amountToSaveDaily),
+        amountToSaveWeekly: Math.ceil(amountToSaveWeekly),
+        amountToSaveMonthly: Math.ceil(amountToSaveMonthly)
+    });
+
+}
+
 const chainRPC = {
     8453: process.env.BASE_RPC_URL,
     84532: process.env.BASE_SEP_RPC_URL
