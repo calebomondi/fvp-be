@@ -1,6 +1,6 @@
 import { formatUnits } from "ethers";
 import supabase from "../database/supabaseClient.js";
-import { 
+import {
     getAssetPrices
 } from "../utils/assetprices.js";
 

@@ -130,6 +130,40 @@ export const getUserVaults = async (req, res) => {
 
 }
 
+//get vault details
+export const getVaultID = async (owner, chainId, contractAddress) => {
+    // Validate inputs
+    if (!ethers.isAddress(owner)) {
+        return "Invalid owner address";
+    }
+    if (!ethers.isAddress(contractAddress)) {
+        return "Invalid contract address";
+    }
+
+    //get contract instance
+    const contract = contractInstance(chainId, contractAddress);
+
+    //get user vaults
+    try {
+        // Get the total number of vaults
+        const vaultCount = await contract.getUserVaultCount(owner);
+        const vaultCountNum = Number(vaultCount);
+
+        //fetch latest vault
+        const latestVault = await contract.getUserVaultByIndex(owner, vaultCountNum - 1);
+        if (!latestVault) {
+            return "No vaults found for this user";
+        }
+        
+        // Return the latest vault ID
+        return vaultCountNum - 1;
+
+    } catch (error) {
+        console.error("Error fetching user vaults:", error);
+        return { error: `Failed to fetch user vaults: ${error.message}`};  
+    }
+}
+
 //get vault transactions
 export const getVaultTransactions = async (req, res) => {
     const {owner, chainId, contractAddress, decimals, vaultId} = req.query;

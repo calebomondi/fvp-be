@@ -1,24 +1,34 @@
 import supabase from "../database/supabaseClient.js";
-import dayjs from 'dayjs';
+import { getVaultID } from "./vaultsController.js";
 
-const AMOUNT_WEIGHT = 0.5;
-const DURATION_WEIGHT = 1;
+const AMOUNT_WEIGHT = 1;
+const DURATION_WEIGHT = 0.5;
 
-export async function createVault(req, res) {
-  const { user_id, amount_locked, lock_duration_days } = req.body;
+function getDate(daysToAdd) {
+  const today = new Date();
+  today.setDate(today.getDate() + daysToAdd);
+  return today;
+}
+
+export async function claimPoints(req, res) {
+  const {owner, chainId, contractAddress, amount_locked, lock_duration_days} = req.body;
+
+  //get vault Id
+  const vaultId = await getVaultID(owner, chainId, contractAddress);
 
   const points = (amount_locked * AMOUNT_WEIGHT) + (lock_duration_days * DURATION_WEIGHT);
-  const lock_end_date = dayjs().add(lock_duration_days, 'day').toISOString();
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('vaults')
     .insert([
       {
-        user_id,
-        amount_locked,
-        lock_duration_days,
-        lock_end_date,
-        points,
+        user: owner,
+        chain_id: chainId,
+        vault_id: vaultId,
+        amount_locked: amount_locked,
+        lock_duration_days: lock_duration_days,
+        lock_enddate: getDate(lock_duration_days),
+        points: points,
         points_status: 'pending',
         status: 'active'
       }
@@ -26,41 +36,89 @@ export async function createVault(req, res) {
 
   if (error) return res.status(500).json({ error });
 
-  return res.status(200).json({ message: 'Vault created', data });
+  res.status(200).json({ status:true });
 }
 
 export async function breakVault(req, res) {
-  const { vault_id } = req.params;
-  const now = dayjs();
+  const { vaultId, chainId, owner } = req.body;
 
+  // fetch the vault data
   const { data: vault, error } = await supabase
     .from('vaults')
     .select('*')
-    .eq('id', vault_id)
+    .eq('vault_id', vaultId)
+    .eq('chain_id', chainId)
+    .eq('user', owner)
     .single();
 
   if (error || !vault) return res.status(404).json({ error: 'Vault not found' });
 
   if (vault.status !== 'active') return res.status(400).json({ error: 'Vault is already closed' });
 
-  const totalDuration = dayjs(vault.lock_end_date).diff(dayjs(vault.created_at), 'day');
-  const elapsed = now.diff(dayjs(vault.created_at), 'day');
+  // Check if the vault is broken early
+  const lockEndDate = new Date(vault.lock_enddate);
+  const createdAt = new Date(vault.created_at);
+  const now = new Date();
+
+  const totalDuration = Math.floor((lockEndDate - createdAt) / (1000 * 60 * 60 * 24)); // in days
+  const elapsed = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24)); // in days
   const progress = elapsed / totalDuration;
+
+  console.log(`Total Duration: ${totalDuration} days, Elapsed: ${elapsed} days, Progress: ${progress}`);
 
   let penalty = 1;
   if (progress >= 0.75) penalty = 0.25;
   else if (progress >= 0.25) penalty = 0.5;
 
   const lostPoints = vault.points * penalty;
+  const pointsafterPenalty = vault.points - lostPoints;
 
-  await supabase
+  if (pointsafterPenalty > 0) {
+    // get current points for the user
+    const { data: userPoints, error: pointsError } = await supabase
+      .from('user_points')
+      .select('points')
+      .eq('user', owner)
+      .eq('chain_id', chainId)
+      .maybeSingle();
+    
+    if (pointsError) {
+      console.error("Error fetching user points:", pointsError);
+      return res.status(500).json({ error: "Failed to fetch user points" });
+    }
+
+    const currentPoints = userPoints ? userPoints.points : 0;
+    const newPoints = currentPoints + pointsafterPenalty;
+  
+    // Claim remaining points
+    const { error: claimError } = await supabase
+      .from('user_points')
+      .insert([
+        {
+          user: owner,
+          chain_id: chainId,
+          points: newPoints
+        }
+      ]);
+
+    if (claimError) {
+      console.error("Error claiming points:", claimError);
+      return res.status(500).json({ error: "Failed to claim points" });
+    }
+  }
+
+  // delete the vault
+  const { error: deleteError } = await supabase
     .from('vaults')
-    .update({
-      status: 'broken',
-      points_status: 'forfeited',
-      lost_points: lostPoints
-    })
-    .eq('id', vault_id);
+    .delete()
+    .eq('vault_id', vaultId)
+    .eq('chain_id', chainId)
+    .eq('user', owner);
+  
+  if (deleteError) {
+    console.error("Error deleting vault:", deleteError);
+    return res.status(500).json({ error: "Failed to delete vault" });
+  }
 
-  res.json({ message: 'Vault broken early', lostPoints });
+  res.json({ message: 'Vault broken early', pointsafterPenalty });
 }

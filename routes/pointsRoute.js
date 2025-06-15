@@ -1,10 +1,9 @@
 import express from 'express';
+import { claimPoints, breakVault } from '../controllers/pointsController.js';
 
 const pointsRoute = express.Router();
 
-pointsRoute.route('/get-points').get((req, res) => {
-    // Placeholder for getting points
-    res.status(200).json({ message: "Points fetched successfully" });
-});
+pointsRoute.route('/claim-points').post(claimPoints);
+pointsRoute.route('/redeem-points/:vault_id').post(breakVault);
 
 export default pointsRoute;
