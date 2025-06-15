@@ -9,6 +9,7 @@ import tokenRoute from './routes/tokensRoute.js';
 import vaultsRoute from './routes/vaultsRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import histRoute from './routes/transacHistRoute.js';
+import pointsRoute from './routes/pointsRoute.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/tokens', tokenRoute);
 app.use('/api/vaults', vaultsRoute);
 app.use('/api/admin', adminRouter);
 app.use('/api/transactions', histRoute);
+app.use('/api/points', pointsRoute);
 app.use('/', homeRoute);
 
 const startServer = async () => {
