@@ -10,7 +10,7 @@ function getDate(daysToAdd) {
   return today;
 }
 
-export async function claimPoints(req, res) {
+export async function earnPoints(req, res) {
   const {owner, chainId, contractAddress, amount_locked, lock_duration_days} = req.body;
 
   //get vault Id
