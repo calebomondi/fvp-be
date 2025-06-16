@@ -122,3 +122,27 @@ export async function breakVault(req, res) {
 
   res.json({ message: 'Vault broken early', pointsafterPenalty });
 }
+
+export async function getPoints(req, res) {
+  const { owner, chainId, vaultId } = req.body;
+
+  // Fetch user points
+  const { data: userPoints, error } = await supabase
+    .from('vaults')
+    .select('points')
+    .eq('user', owner)
+    .eq('chain_id', chainId)
+    .eq('vault_id', vaultId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching user points:", error);
+    return res.status(500).json({ error: "Failed to fetch user points" });
+  }
+
+  if (!userPoints) {
+    return res.status(404).json({ message: "No points found for this user" });
+  }
+
+  res.json({ points: userPoints.points });
+}
