@@ -1,4 +1,4 @@
-import supabase from "../database/supabaseClient.js";
+import supabase from "../database/supabaseClient.js"
 import dayjs from 'dayjs';
 
 export async function checkVaultMaturity() {
