@@ -16,7 +16,7 @@ export async function earnPoints(req, res) {
   //get vault Id
   const vaultId = await getVaultID(owner, chainId, contractAddress);
 
-  const points = (amount_locked * AMOUNT_WEIGHT) + (lock_duration_days * DURATION_WEIGHT);
+  const points = (amount_locked * AMOUNT_WEIGHT) + Math.floor(lock_duration_days * DURATION_WEIGHT);
 
   const { error } = await supabase
     .from('vaults')
@@ -37,6 +37,41 @@ export async function earnPoints(req, res) {
   if (error) return res.status(500).json({ error });
 
   res.status(200).json({ status:true });
+}
+
+export async function earnPointOnAddition(req, res) {
+  const {owner, chainId, vaultId, amount_added} = req.body;
+
+  try {
+    // Fetch the vault data
+    const { data: vault, error } = await supabase
+      .from('vaults')
+      .select('*')
+      .eq('vault_id', vaultId)
+      .eq('chain_id', chainId)
+      .eq('user', owner)
+      .single();
+
+    if (error || !vault) return res.status(404).json({ error: 'Vault not found' });
+
+    // Update the vault with the new points
+    const { error: updateError } = await supabase
+      .from('vaults')
+      .update({ points: vault.points + amount_added })
+      .eq('vault_id', vaultId)
+      .eq('chain_id', chainId)
+      .eq('user', owner);
+
+    if (updateError) {
+      console.error("Error updating vault points:", updateError);
+      return res.status(500).json({ error: "Failed to update vault points" });
+    }
+
+    res.json({ status: true });
+  } catch (error) {
+    console.error("Error in earnPointOnAddition:", error);
+    return res.status(500).json({ error: "Failed to earn points on addition" });
+  }
 }
 
 export async function breakVault(req, res) {
@@ -124,8 +159,8 @@ export async function breakVault(req, res) {
 }
 
 export async function getPoints(req, res) {
-  const { owner, chainId, vaultId } = req.body;
-
+  const { owner, chainId, vaultId } = req.query;
+  console.log("Fetching points for:", { owner, chainId, vaultId });
   // Fetch user points
   const { data: userPoints, error } = await supabase
     .from('vaults')
@@ -140,9 +175,5 @@ export async function getPoints(req, res) {
     return res.status(500).json({ error: "Failed to fetch user points" });
   }
 
-  if (!userPoints) {
-    return res.status(404).json({ message: "No points found for this user" });
-  }
-
-  res.json({ points: userPoints.points });
+  res.json({ points: userPoints ? userPoints.points : 0 });
 }

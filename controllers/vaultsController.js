@@ -38,9 +38,12 @@ export const calculateGoals = async (req, res) => {
     // remaining amount to reach goal
     const remainingAmount = goalAmount - currentAmount;
 
+    // endDate to timestamp in seconds
+    const timestampEndDate = new Date(endDate).getTime() / 1000;
+
     // Calculate the time remaining until the goal end date
     const currentDate = Math.floor(Date.now() / 1000); // Current time in seconds
-    const toEndDateInSeconds = Number(endDate) - currentDate;
+    const toEndDateInSeconds = timestampEndDate - currentDate;
     const daysToEndDate = Math.floor(toEndDateInSeconds / (60 * 60 * 24)); // Convert seconds to days
     const weeksToEndDate = Math.floor(daysToEndDate / 7); // Convert days to weeks
     const monthsToEndDate = Math.floor(daysToEndDate / 28); // Convert days to months
