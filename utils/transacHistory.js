@@ -52,9 +52,12 @@ export function analyzeTransactions(moralisResponse) {
     return obj[snakeCase] !== undefined ? obj[snakeCase] : obj[camelCase];
   };
 
+  //
+  const sortedTransactions = [...transactions].sort((a,b) => new Date(a.blockTimestamp) - new Date(b.blockTimestamp))
+
   // Set date range using flexible property access
-  const firstTimestamp = getProp(transactions[0], 'block_timestamp', 'blockTimestamp');
-  const lastTimestamp = getProp(transactions[transactions.length - 1], 'block_timestamp', 'blockTimestamp');
+  const firstTimestamp = getProp(sortedTransactions[0], 'block_timestamp', 'blockTimestamp');
+  const lastTimestamp = getProp(sortedTransactions[sortedTransactions.length - 1], 'block_timestamp', 'blockTimestamp');
   
   analysis.summary.dateRange.to = firstTimestamp;
   analysis.summary.dateRange.from = lastTimestamp;
@@ -65,7 +68,7 @@ export function analyzeTransactions(moralisResponse) {
   console.log(`Date Range: ${analysis.summary.dateRange.from} to ${analysis.summary.dateRange.to}`);
 
   // Analyze each transaction
-  transactions.forEach((tx, index) => {
+  sortedTransactions.forEach((tx, index) => {
     const blockTimestamp = getProp(tx, 'block_timestamp', 'blockTimestamp');
     const txDate = new Date(blockTimestamp);
     const monthKey = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}`;
@@ -102,6 +105,7 @@ export function analyzeTransactions(moralisResponse) {
 
     // Categorize transaction
     const category = categorizeTransaction(tx);
+    console.log(category)
     if (!analysis.categories[category]) {
       analysis.categories[category] = { count: 0, transactions: [], totalValue: 0, gasFees: 0 };
     }
@@ -164,7 +168,7 @@ export function analyzeTransactions(moralisResponse) {
   });
 
   // Calculate gas fee statistics
-  const gasFees = transactions.map(tx => {
+  const gasFees = sortedTransactions.map(tx => {
     const transactionFee = getProp(tx, 'transaction_fee', 'transactionFee');
     return parseFloat(transactionFee) || 0;
   });
