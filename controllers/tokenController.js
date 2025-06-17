@@ -2,7 +2,7 @@ import { formatUnits } from "ethers";
 import supabase from "../database/supabaseClient.js";
 import {
     getAssetPrices
-} from "../utils/assetprices.js";
+} from "../utils/assetprices.js"
 
 //calculate the value trends of the asset
 export const valueTrends = async (req, res) => {
