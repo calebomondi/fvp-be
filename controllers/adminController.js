@@ -3,9 +3,6 @@ import { earnings } from "../data.js";
 
 export const categorizeRevenue = async (req, res) => {
     const { startDate, endDate } = req.query;
-    
-    //fetch data using hook
-    console.log(`Earnings: ${JSON.stringify(earnings)}`);
 
     // Categorize revenue based on asset type
     const categorizedRevenue = earnings.reduce((acc, earning) => {
