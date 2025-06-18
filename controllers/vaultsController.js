@@ -3,11 +3,12 @@ import {
     getUnlockStatus,
     getFullUnlockDaysStatus
 } from "../utils/scheduled.js";
-import { LOCKASSET_CONTRACT_ABI } from "../blockchain/core.js";
+import { LOCKASSET_CONTRACT_ABI, ERC20_ABI } from "../blockchain/core.js";
 import { ethers } from "ethers";
 import { getTokendecimalsNSymbol } from "../utils/tokens.js";
 import { analyzeUserVaults } from "../utils/dashboard.js";
 import { config } from "dotenv";
+import supabase from "../database/supabaseClient.js";
 
 config();
 
@@ -244,4 +245,65 @@ export const dashboardAnalysis = async (req, res) => {
 
     const analysisResults = analyzeUserVaults(userVaults);
     res.json(analysisResults);
+}
+
+// get token addresses
+const getTokenAddresses = async (chainId) => {
+    console.log(`id: ${chainId}`)
+    try {
+        //get table name
+        const { data: table, error: tableError } = await supabase
+            .from("chain")
+            .select("name")
+            .eq("network_id", chainId);
+        
+        if (tableError) throw tableError;
+        if (table.length === 0) {
+            return res.status(404).json({ error: "Chain not found" });
+        }
+
+        //get token addresses
+        const { data: tokens, error: tokenError } = await supabase
+            .from(table[0].name)
+            .select("address");
+
+        if (tokenError) throw tokenError;
+        if (tokens.length === 0) {
+            return res.status(404).json({ error: "No supported tokens found" });
+        }
+
+        return tokens.map(token => token.address);
+
+    } catch (error) {
+        console.error("Error fetching token addresses:", error);
+        res.status(500).json(error);
+    }
+}
+
+// get user token balances
+export const getUserTokenBalances = async (req, res) => {
+    const {owner, chainId} = req.query;
+
+    const addresses = await getTokenAddresses(chainId);
+    if (!addresses || addresses.length === 0) {
+        return res.status(404).json({ error: "No token addresses found for this chain" });
+    }
+
+    try {
+        const balances = await Promise.all(addresses.map(async (address) => {
+            const contract = new ethers.Contract(address, ERC20_ABI, new ethers.JsonRpcProvider(chainRPC[chainId]));
+            const balance = await contract.balanceOf(owner);
+            const decimals = await contract.decimals();
+            const symbol = await contract.symbol();
+            return {
+                balance: ethers.formatUnits(balance, decimals),
+                symbol
+            };
+        }));
+
+        res.json(balances);
+    } catch (error) {
+        console.error("Error fetching vault transactions:", error);
+        res.status(500).json({ error: "Failed to fetch vault transactions" });
+    }
 }
