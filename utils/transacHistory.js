@@ -186,17 +186,13 @@ function analyzeBehavior(tx, index, allTransactions, analysis) {
 
   const blockTimestamp = getProp(tx, 'block_timestamp', 'blockTimestamp');
   const txTime = new Date(blockTimestamp).getTime();
-  console.log(`Analyzing transaction at index ${index} with timestamp ${blockTimestamp}`);
   
   // Check for rapid successive transactions (within 5 minutes)
   if (index > 0) {
     const prevTx = allTransactions[index - 1];
     const prevBlockTimestamp = getProp(prevTx, 'block_timestamp', 'blockTimestamp');
     const prevTime = new Date(prevBlockTimestamp).getTime();
-    const timeDiff = (txTime - prevTime) / (1000 * 60); // minutes
-    console.log(`${txTime} - ${prevTime} = ${txTime - prevTime} ms`)
-    console.log(`txTime > prevTime : ${txTime > prevTime}`)
-    console.log(`${index} > ${timeDiff}`)
+    const timeDiff = (txTime - prevTime) / (1000 * 60);
     
     if (timeDiff < 10 && timeDiff > 0) {
       analysis.behaviorAnalysis.frequentTrading.push({
