@@ -1,7 +1,7 @@
 import Moralis from "moralis";
 import { ethers, toBeHex } from "ethers";
 import { analyzeTransactions } from "../utils/transacHistory.js";
-import { transacHist } from "../data.js";
+// import { transacHist } from "../data.js";
 
 export const getTransacHist = async (req, res) => {
     const { chain, address } = req.body;
