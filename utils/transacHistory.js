@@ -8,17 +8,6 @@ export function analyzeTransactions(moralisResponse) {
     throw new Error('No transactions found in response');
   }
   
-  // Debug: Check the actual property names in the first transaction
-  console.log('=== PROPERTY DEBUGGING ===');
-  console.log('First transaction sample properties:');
-  const firstTx = transactions[0];
-  console.log('block_timestamp:', firstTx.block_timestamp);
-  console.log('blockTimestamp:', firstTx.blockTimestamp);
-  console.log('transaction_fee:', firstTx.transaction_fee);
-  console.log('transactionFee:', firstTx.transactionFee);
-  console.log('erc20_transfers length:', firstTx.erc20_transfers?.length);
-  console.log('erc20Transfers length:', firstTx.erc20Transfers?.length);
-  
   const analysis = {
     summary: {
       totalTransactions: transactions.length,
@@ -53,7 +42,11 @@ export function analyzeTransactions(moralisResponse) {
   };
 
   //
-  const sortedTransactions = [...transactions].sort((a,b) => new Date(a.blockTimestamp) - new Date(b.blockTimestamp))
+  const sortedTransactions = transactions.sort((a, b) => {
+    const timeA = new Date(getProp(a, 'block_timestamp', 'blockTimestamp')).getTime();
+    const timeB = new Date(getProp(b, 'block_timestamp', 'blockTimestamp')).getTime();
+    return timeA - timeB; // Oldest first
+  });
 
   // Set date range using flexible property access
   const firstTimestamp = getProp(sortedTransactions[0], 'block_timestamp', 'blockTimestamp');
@@ -61,11 +54,6 @@ export function analyzeTransactions(moralisResponse) {
   
   analysis.summary.dateRange.to = firstTimestamp;
   analysis.summary.dateRange.from = lastTimestamp;
-  
-  console.log('=== DATE RANGE SETTING ===');
-  console.log('First timestamp:', firstTimestamp);
-  console.log('Last timestamp:', lastTimestamp);
-  console.log(`Date Range: ${analysis.summary.dateRange.from} to ${analysis.summary.dateRange.to}`);
 
   // Analyze each transaction
   sortedTransactions.forEach((tx, index) => {
@@ -105,7 +93,6 @@ export function analyzeTransactions(moralisResponse) {
 
     // Categorize transaction
     const category = categorizeTransaction(tx);
-    console.log(category)
     if (!analysis.categories[category]) {
       analysis.categories[category] = { count: 0, transactions: [], totalValue: 0, gasFees: 0 };
     }
@@ -184,12 +171,6 @@ export function analyzeTransactions(moralisResponse) {
     .sort((a, b) => b.totalVolume - a.totalVolume)
     .slice(0, 5);
 
-  console.log('=== FINAL ANALYSIS ===');
-  console.log('Total gas fees:', analysis.summary.totalGasFees);
-  console.log('Categories found:', Object.keys(analysis.categories));
-  console.log('Top tokens count:', analysis.topTokens.length);
-  console.log('Date range final:', analysis.summary.dateRange);
-
   return analysis;
 }
 
@@ -204,16 +185,20 @@ function analyzeBehavior(tx, index, allTransactions, analysis) {
   };
 
   const blockTimestamp = getProp(tx, 'block_timestamp', 'blockTimestamp');
-  const txTime = new Date(blockTimestamp);
+  const txTime = new Date(blockTimestamp).getTime();
+  console.log(`Analyzing transaction at index ${index} with timestamp ${blockTimestamp}`);
   
   // Check for rapid successive transactions (within 5 minutes)
   if (index > 0) {
     const prevTx = allTransactions[index - 1];
     const prevBlockTimestamp = getProp(prevTx, 'block_timestamp', 'blockTimestamp');
-    const prevTime = new Date(prevBlockTimestamp);
+    const prevTime = new Date(prevBlockTimestamp).getTime();
     const timeDiff = (txTime - prevTime) / (1000 * 60); // minutes
+    console.log(`${txTime} - ${prevTime} = ${txTime - prevTime} ms`)
+    console.log(`txTime > prevTime : ${txTime > prevTime}`)
+    console.log(`${index} > ${timeDiff}`)
     
-    if (timeDiff < 5 && timeDiff > 0) {
+    if (timeDiff < 10 && timeDiff > 0) {
       analysis.behaviorAnalysis.frequentTrading.push({
         hash: tx.hash,
         summary: tx.summary,
@@ -263,8 +248,8 @@ function analyzeBehavior(tx, index, allTransactions, analysis) {
           summary: tx.summary,
           category: tx.category,
           timestamp: tx.timestamp,
-          value: swapValue,
-          recentSwapCount: recentSwaps,
+          gasFee: gasFee,
+          averageGasFee: avgGasFee,
           flag: 'Frequent small swaps detected',
           severity: 'medium'
         });

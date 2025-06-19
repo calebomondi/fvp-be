@@ -21,7 +21,7 @@ export const getTransacHist = async (req, res) => {
 
     while (retries < MAX_RETRIES) {
         try {
-            // Fetch transaction history using Moralis
+            /*/ Fetch transaction history using Moralis
             response = await Moralis.EvmApi.wallets.getWalletHistory({
                 "chain": toBeHex(chain),
                 "order": "DESC",
@@ -33,8 +33,8 @@ export const getTransacHist = async (req, res) => {
             // Check if the response contains results
             if (!response || !response.result || response.result.length === 0) {
                 return res.status(404).json({ message: "No transaction history found for the given address and period." });
-            }
-
+            }*/
+            const response = transacHist
             const analysis = analyzeTransactions(response);
             res.status(200).json(analysis);
 
