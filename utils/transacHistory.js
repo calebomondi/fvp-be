@@ -41,7 +41,7 @@ export function analyzeTransactions(moralisResponse) {
     return obj[snakeCase] !== undefined ? obj[snakeCase] : obj[camelCase];
   };
 
-  //
+  // Set initial summary values
   const sortedTransactions = transactions.sort((a, b) => {
     const timeA = new Date(getProp(a, 'block_timestamp', 'blockTimestamp')).getTime();
     const timeB = new Date(getProp(b, 'block_timestamp', 'blockTimestamp')).getTime();

@@ -160,7 +160,7 @@ export async function breakVault(req, res) {
 
 export async function getPoints(req, res) {
   const { owner, chainId, vaultId } = req.query;
-  console.log("Fetching points for:", { owner, chainId, vaultId });
+  
   // Fetch user points
   const { data: userPoints, error } = await supabase
     .from('vaults')
