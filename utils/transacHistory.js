@@ -188,13 +188,13 @@ function analyzeBehavior(tx, index, allTransactions, analysis) {
   const txTime = new Date(blockTimestamp).getTime();
   
   // Check for rapid successive transactions (within 5 minutes)
-  if (index > 0) {
+  if (index > 0 && (tx.category === 'token swap' || tx.category === 'token send')) {
     const prevTx = allTransactions[index - 1];
     const prevBlockTimestamp = getProp(prevTx, 'block_timestamp', 'blockTimestamp');
     const prevTime = new Date(prevBlockTimestamp).getTime();
     const timeDiff = (txTime - prevTime) / (1000 * 60);
     
-    if (timeDiff < 10 && timeDiff > 0) {
+    if (timeDiff < 10 && timeDiff > 0 && (prevTx.category === 'token swap' || prevTx.category === 'token send')) {
       analysis.behaviorAnalysis.frequentTrading.push({
         hash: tx.hash,
         summary: tx.summary,
