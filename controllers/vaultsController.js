@@ -304,6 +304,6 @@ export const getUserTokenBalances = async (req, res) => {
         res.json(balances);
     } catch (error) {
         console.error("Error fetching vault transactions:", error);
-        res.status(500).json({ error: "Failed to fetch vault transactions" });
+        res.status(500).json({ error: "Failed to fetch vault transactions", error });
     }
 }
