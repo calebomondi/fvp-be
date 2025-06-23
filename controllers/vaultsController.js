@@ -72,7 +72,8 @@ export const calculateGoals = async (req, res) => {
 
 const chainRPC = {
     8453: process.env.BASE_RPC_URL,
-    84532: process.env.BASE_SEP_RPC_URL
+    84532: process.env.BASE_SEP_RPC_URL,
+    4202: process.env.LISK_SEP_RPC_URL
 }
 
 //contract instance
@@ -122,7 +123,6 @@ export const getUserVaults = async (req, res) => {
             let symbol = "ETH";
 
             if (!vaultData.native) {
-                console.log("vaultData.asset: ", vaultData.asset)
                 if (decimalsCache.has(vaultData.asset) && symbolsCache.has(vaultData.asset)) {
                     symbol = symbolsCache.get(vaultData.asset);
                     decimals = decimalsCache.get(vaultData.asset);
