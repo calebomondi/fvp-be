@@ -11,7 +11,7 @@ import vaultsRoute from './routes/vaultsRoute.js';
 import adminRouter from './routes/adminRoute.js';
 import histRoute from './routes/transacHistRoute.js';
 import pointsRoute from './routes/pointsRoute.js';
-import twitterRoutes from "./routes/twitterRoutes.js";
+// import twitterRoutes from "./routes/twitterRoutes.js";
 
 dotenv.config();
 
@@ -23,18 +23,18 @@ const SESSION_SECRET = process.env.SESSION_SECRET
 app.use(
   cors({
     origin: ["http://localhost:5173","https://fvp-fe.vercel.app", "https://fvp.finance"],
-    credentials: true,
+    // credentials: true,
   }),
-  session({
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-    secure: false, // set to true in production with HTTPS
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-  },
-  })
+  // session({
+  //   secret: SESSION_SECRET,
+  //   resave: false,
+  //   saveUninitialized: false,
+  //   cookie: {
+  //   secure: false, // set to true in production with HTTPS
+  //   httpOnly: true,
+  //   maxAge: 24 * 60 * 60 * 1000, // 1 day
+  // },
+  // })
 );
 
 app.use(express.json({ limit: "5mb" }));
@@ -46,7 +46,7 @@ app.use('/api/vaults', vaultsRoute);
 app.use('/api/admin', adminRouter);
 app.use('/api/transactions', histRoute);
 app.use('/api/points', pointsRoute);
-app.use("/api/twitter", twitterRoutes);
+// app.use("/api/twitter", twitterRoutes);
 app.use('/', homeRoute);
 
 const startServer = async () => {

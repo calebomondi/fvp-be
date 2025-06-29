@@ -1,21 +1,40 @@
-//import hook that fetches earrnings data
-import { earnings } from "../data.js";
+import { LOCKASSET_CONTRACT_ABI } from "../blockchain/core.js";
+import { ethers } from "ethers";
+import { config } from "dotenv";
 
-export const categorizeRevenue = async (req, res) => {
-    const { startDate, endDate } = req.query;
+config();
 
-    // Categorize revenue based on asset type
-    const categorizedRevenue = earnings.reduce((acc, earning) => {
-        // Check if the earning falls within the specified date range
-        if(earning.timestamp >= startDate && earning.timestamp <= endDate) {
-            //categorize by asset type and sum the amounts
-            acc[earning.asset] = (acc[earning.asset] || 0) + earning.amount;
-        }
-        return acc;
-    }, {});
+// Fetch RPC based on chain ID
+const chainRPC = {
+    8453: process.env.BASE_RPC_URL,
+    84532: process.env.BASE_SEP_RPC_URL,
+    4202: process.env.LISK_SEP_RPC_URL
+}
 
-    res.status(200).json({
-        status: 'success',
-        revenue: categorizedRevenue
-    });
+// Contract instance
+const contractInstance = (chainId, contractAddress) => {
+    const rpc = chainRPC[chainId];
+    const provider = new ethers.JsonRpcProvider(rpc);
+    const contract = new ethers.Contract(contractAddress, LOCKASSET_CONTRACT_ABI, provider);
+    return contract;
+}
+
+// platform stats
+export const getPlatformStats = async (req, res) => {
+    const {chainId, contractAddress} = req.query;
+    
+    // Validate inputs
+    if (!chainId || !ethers.isAddress(contractAddress)) {
+        return res.status(400).json({ error: "Invalid owner or contract address" });
+    }
+
+    //get contract instance
+    const contract = contractInstance(chainId, contractAddress);
+
+    try {
+        
+    } catch (error) {
+        console.error("Error fetching platform stats:", error);
+        return res.status(500).json({ error: `Internal server error: ${error}` });
+    }
 }
